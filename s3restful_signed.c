@@ -12,6 +12,7 @@
 #DEFINE BUFFER_SIZE = 4096
 
 BIGNUM *s3_signed_range_request(char * server_domain,
+                                char * s3_id,
                                 char * authorization_token,
                                 char * client_timestamp,
                                 char * object_key,
@@ -62,12 +63,13 @@ BIGNUM *s3_signed_range_request(char * server_domain,
     //Working signed with date
     sprintf(curlbuffer, "GET %s HTTP/1.1\r\nHost: %s\r\n"
                         "Date: %s\r\nRange: bytes=%i-%i\r\n"
-                        "Authorization: AWS AKIAI5EKLTAVGRTMNAPQ:%s\r\n\r\n",
+                        "Authorization: AWS %s:%s\r\n\r\n",
                         object_key, 
                         server_domain, 
                         client_timestamp,
                         start_byte,
                         end_byte,
+                        s3_id,
                         authorization_token);
 
     //Send the string and receive the file
