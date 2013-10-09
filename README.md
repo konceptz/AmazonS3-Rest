@@ -2,8 +2,11 @@
 
 <p>Get a byte portion of a file with a client generated token</p>
 
-<p>Author:     Arthur Hinds
-  Purpose:    A function that can receive a partial
+<p>Author:    Arthur Hinds<br>
+  
+<p>Purpose:    
+  
+<p>A function that can receive a partial
               file from Amazon S3 using a signed
               restful request and return the data as
               a BIGNUM.</p>
