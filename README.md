@@ -13,7 +13,7 @@ A function that can receive a partial
 
 <code>BIGNUM *s3_signed_range_request(char * server_domain,
                                 char * authorization_token,
-                                char * client_timestamp,
+                                char * client_timestamp,<p>
                                 char * object_key,
                                 int start_byte,
                                 int end_byte)</code>
