@@ -90,7 +90,7 @@ BIGNUM *s3_signed_range_request(char * server_domain,
 
     //get the actual content out into a biginteger
     int data_size = end_byte - start_byte;
-    unsigned char content[10]; //hard coded to match the requested number of bytes
+    unsigned char content[data_size]; 
     strncpy(content, message+(bytes_received - data_size), data_size);
     BIGNUM *content_as_bignum;
     content_as_bignum = BN_new();
