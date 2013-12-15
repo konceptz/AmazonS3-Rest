@@ -24,3 +24,8 @@ openssl/bn.h
 openssl/crypto.h  
 openssl/evp.h
 <code></pre>
+
+
+**Unfortunetly, I have not implemented this to take greater than 1 MTU size - TCP header size - IP header size, so this will gather only 1560 bytes.  Major TODO.
+
+I have since implemented this using libcUrl, but I will finish this in case anyone wants to use this without the use of libcUrl
