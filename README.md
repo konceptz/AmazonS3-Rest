@@ -1,31 +1,14 @@
-<pre><code>Author:     Arthur hinds
-Purpose:    A function that can receive a partial
-            file from Amazon S3 using a signed
-            restful request and return the data as
-            a BIGNUM.
+S3 Pre Signed Request
+=====================
 
-BIGNUM *s3_signed_range_request(char * server_domain,
-                                char * authorization_token,
-                                char * client_timestamp,
-                                char * object_key,
-                                int start_byte,
-                                int end_byte)
-
-stdio.h 
-stdlib.h  
-time.h
-unistd.h  
-string.h
-sys/types.h
-sys/socket.h
-netinet/in.h  
-netdb.h
-openssl/bn.h  
-openssl/crypto.h  
-openssl/evp.h
-<code></pre>
+If you would like to implement a signed S3 request where a token has already been generated, this code will fetch the data and place it in memory, returning a pointer to it's location.
 
 
-**Unfortunetly, I have not implemented this to take greater than 1 MTU size - TCP header size - IP header size, so this will gather only 1560 bytes.  Major TODO.
+Use case
+========
 
-I have since implemented this using libcUrl, but I will finish this in case anyone wants to use this without the use of libcUrl
+The fetching of data is done on an insecure machine, one where you would not like to share your private amazon keys.
+
+
+**To use this code please have libcURL installed.
+http://curl.haxx.se/libcurl
