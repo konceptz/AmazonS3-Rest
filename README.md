@@ -12,3 +12,9 @@ The fetching of data is done on an insecure machine, one where you would not lik
 
 **To use this code please have libcURL installed.
 http://curl.haxx.se/libcurl
+
+Author
+======
+
+Arthur Hinds<br>
+July 2013
