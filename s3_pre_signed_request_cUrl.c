@@ -37,19 +37,14 @@ unsigned char * s3_signed_request(   unsigned char * resource,
     curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1);
 
     //Set a header
-    //char * xamzdate[128];
     char * xamzdate = malloc(sizeof(char)*128);
     char * range = malloc(sizeof(char)*128);
-    //char * range[128];
     sprintf(range, "Range: bytes=%li-%li", start_byte, end_byte);
 
     //char * authorization[128];
     char * authorization = malloc(sizeof(char)*128);
 
     sprintf(xamzdate, "Date: %s", timestamp);
-    //disable the accept header
-    //char * removeAccept = "Accept:";
-    //sprintf(range, "Range: 0-9",);
     sprintf(authorization, "Authorization: AWS %s:%s", s3_general_key, authorization_token);
 
     //  slist = curl_slist_append(slist, removeAccept);
@@ -76,9 +71,6 @@ unsigned char * s3_signed_request(   unsigned char * resource,
         return NULL;
     }
 
-    //printf("Return code: %i\n", res);
-    //printf("%s\n", head_data.memory);
-    //printf("%s\n", data.memory);
     unsigned char * return_buffer = malloc(sizeof(unsigned char) * data.size +1);
     memcpy(return_buffer, data.memory, data.size);
 
@@ -94,7 +86,6 @@ unsigned char * s3_signed_request(   unsigned char * resource,
     /* cleanup curl stuff */ 
     curl_easy_cleanup(curl_handle);
     //curl_global_cleanup();
-
 
     return return_buffer;
 
