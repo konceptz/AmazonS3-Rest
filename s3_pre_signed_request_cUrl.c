@@ -1,4 +1,56 @@
-unsigned char * s3_signed_request(   unsigned char * resource,
+/*  Author:  Arthur Hinds
+ *  Purpose:    We want to retreive a peice, or all, of a file from 
+ *              Amazon S3 without knowing the secret key.
+ * 
+ * Use Case:    An S3 bucket owner wants to allow temporary access to some or all
+ *              of a file.  The user does not wish to share his/her private key
+ *              for signing purposes but would like to still use low level calls.
+ */
+
+int recv_block(int sock, void *buffer, int length){
+    unsigned char head_buffer[1];
+    int r = 0;
+    int ret = 0;
+
+    while (1){
+        ret = recv(sock, &head_buffer, 1, 0);
+
+        //We are nesting buffer character checks to look for the sequence
+        //'\r\n\r\n'.  How can we find a better way than checking each char?
+        if (ret < 0){
+            printf("Error\n");
+            return -1;
+        }
+        if (head_buffer[0] == '\r') {
+            ret = recv(sock, &head_buffer, 1, 0);
+            if (head_buffer[0] == '\n') {
+                ret = recv(sock, &head_buffer, 1, 0);
+            }
+            if (head_buffer[0] == '\r') {
+                ret = recv(sock, &head_buffer, 1, 0);
+            }
+            if (head_buffer[0] == '\n') {
+                break;
+            }
+        }
+    }
+
+    //Here we have found the end of the variable length header and we may begin 
+    //collecting data of size length.
+
+    while (r < length){
+        ret = recv(sock, buffer+r, length - r, 0);
+        if (ret < 0){
+            printf("Error\n");
+            return -1;
+        }
+        r += ret;
+    }
+    return r;
+
+}
+
+unsigned char * s3_signed_request(  unsigned char * resource,
         unsigned char * server_domain,
         unsigned char * s3_general_key,
         unsigned char * timestamp,
@@ -6,96 +58,73 @@ unsigned char * s3_signed_request(   unsigned char * resource,
         long int start_byte,
         long int end_byte){
 
-    struct MemoryStruct data;
-    struct MemoryStruct head_data;
-    CURLcode res;
+    //Set up the socket to Amazon
+    int s3sockfd, portno, n;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+    portno = 80;
+    s3sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    data.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
-    data.size = 0;    /* no data at this point */ 
-    head_data.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
-    head_data.size = 0;    /* no data at this point */ 
-
-    struct curl_slist *slist=NULL;
-
-    CURL *curl_handle;
-
-    curl_global_init(CURL_GLOBAL_ALL);
-
-    /* init the curl session */ 
-    curl_handle = curl_easy_init();
-
-    /* set URL to get */ 
-    //char url_resource[256];
-    char * url_resource = malloc(sizeof(char)*256);
-    sprintf(url_resource, "%s%s", server_domain,resource);
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url_resource);
-
-    /* no progress meter please */ 
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-
-    /* set to get */
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1);
-
-    //Set a header
-    //char * xamzdate[128];
-    char * xamzdate = malloc(sizeof(char)*128);
-    char * range = malloc(sizeof(char)*128);
-    //char * range[128];
-    sprintf(range, "Range: bytes=%li-%li", start_byte, end_byte);
-
-    //char * authorization[128];
-    char * authorization = malloc(sizeof(char)*128);
-
-    sprintf(xamzdate, "Date: %s", timestamp);
-    //disable the accept header
-    //char * removeAccept = "Accept:";
-    //sprintf(range, "Range: 0-9",);
-    sprintf(authorization, "Authorization: AWS %s:%s", s3_general_key, authorization_token);
-
-    //  slist = curl_slist_append(slist, removeAccept);
-    slist = curl_slist_append(slist, "Accept:");
-    slist = curl_slist_append(slist, xamzdate);
-    slist = curl_slist_append(slist, range);
-    slist = curl_slist_append(slist, authorization);
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist);
-
-    /* send all data to this function  */ 
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-
-    /* we want the headers be written to this file handle */ 
-    curl_easy_setopt(curl_handle,   CURLOPT_WRITEHEADER, (void*)&head_data);
-    //TODO check for auth errors here
-
-    /* we want the body be written to this file handle instead of stdout */ 
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&data);
-
-    /* get it! */ 
-    res = curl_easy_perform(curl_handle);
-    if (strstr(head_data.memory, "403 Forbidden")){
-        printf("Error 403\n");
+    server = gethostbyname(server_domain);
+    if (server == NULL){
+        printf("trouble connecting");
         return NULL;
     }
 
-    //printf("Return code: %i\n", res);
-    //printf("%s\n", head_data.memory);
-    //printf("%s\n", data.memory);
-    unsigned char * return_buffer = malloc(sizeof(unsigned char) * data.size +1);
-    memcpy(return_buffer, data.memory, data.size);
-
-    //Free all memory from this request except the data
-    free(data.memory);
-    free(head_data.memory);
-    free(url_resource);
-    free(xamzdate);
-    free(authorization);
-    free(range);
-
-    curl_slist_free_all(slist); 
-    /* cleanup curl stuff */ 
-    curl_easy_cleanup(curl_handle);
-    //curl_global_cleanup();
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, 
+            (char *)&serv_addr.sin_addr.s_addr,
+            server->h_length);
+    serv_addr.sin_port = htons(portno);
+    if (connect(s3sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+        printf("ERROR CONNECTING");
+        return NULL;
+    }
 
 
-    return return_buffer;
+    /*
+     *  If we want the function to create the timestamp.
+     *  This is difficult because it must match the 
+     *  signed token to the second or Amazon will deny it.
+
+     time_t timer;
+     char time_buffer[55];
+     struct tm* tm_info;
+     time(&timer);
+     tm_info = localtime(&timer);
+     strftime(time_buffer, 55, "%a, %d %b %Y %OH:%M:%S %Z", tm_info);
+     */
+
+    unsigned char * request_string;
+    request_string = malloc(sizeof(unsigned char)*256);
+
+    //Write the hand crafted string.  
+    sprintf(request_string, "GET %s HTTP/1.1\r\nHost: %s\r\n"
+            "Date: %s\r\nRange: bytes=%i-%i\r\n"
+            "Authorization: AWS %s:%s\r\n\r\n",
+            resource, 
+            server_domain, 
+            timestamp,
+            start_byte,
+            end_byte,
+            s3_general_key,
+            authorization_token);
+
+    //Send the string and receive the file
+    if (write(s3sockfd,curlbuffer,strlen(request_string)) < 0 ){
+        printf("error writing to socket\n");
+        return -1;
+    }
+
+    int receive_size = (end_byte - start_byte)+1;
+    unsigned char * data_buffer = malloc(sizeof(unsigned char)* receive_size);
+    int bytes_received = recv_block(s3sockfd, data_buffer, receive_size);
+
+    //CLEANUP
+    free(request_string);
+    close(s3sockfd);
+
+    return (data_buffer);
 
 }
