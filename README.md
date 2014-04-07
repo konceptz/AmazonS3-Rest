@@ -10,8 +10,11 @@ Use case
 The fetching of data is done on an insecure machine, one where you would not like to share your private amazon keys.
 
 
-**To use this code please have libcURL installed.
-http://curl.haxx.se/libcurl
+Depricated (**To use this code please have libcURL installed.
+http://curl.haxx.se/libcurl)
+
+We now use hand crafted gets.  
+
 
 Author
 ======
